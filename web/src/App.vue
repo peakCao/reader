@@ -541,6 +541,7 @@ export default {
       }
     },
     async init(refresh) {
+      // refresh = true;
       if (this.initing) {
         refresh &&
           setTimeout(() => {

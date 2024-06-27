@@ -505,6 +505,7 @@ export default {
       this.$once("showContent", () => {
         this.showMatchKeyword(data);
       });
+      // console.log("showSearchContent", data);
       this.getContent(data.chapterIndex);
     });
     eventBus.$on("showBookmark", bookmark => {
@@ -526,11 +527,12 @@ export default {
       this.$once("showContent", () => {
         this.showBookmark(bookmark);
       });
+      // console.log("showBookmark", bookmark);
       this.getContent(bookmark.chapterIndex);
     });
   },
   activated() {
-    this.init();
+    this.init(true);
     window.addEventListener("keydown", this.keydownHandler);
     if (this.title) {
       document.title =
@@ -1056,6 +1058,7 @@ export default {
           this.lastReadingBook.bookUrl !==
             this.$store.getters.readingBook.bookUrl
         ) {
+          // console.log("获取内容");
           this.title = "";
           this.show = false;
           this.loading = this.$loading({
@@ -1118,11 +1121,17 @@ export default {
         res => {
           if (res.data.isSuccess) {
             var book = Object.assign({}, this.$store.getters.readingBook);
-            book.catalog = res.data.data;
-            this.$store.commit("setReadingBook", book);
-            this.$emit("loadCatalog");
-            var index = book.index || 0;
-            this.getContent(index);
+            this.getCurrentBook(res.data.data[0].bookUrl).then(inres => {
+              if (inres.data.isSuccess) {
+                book.catalog = res.data.data;
+                this.$store.commit("setReadingBook", book);
+                this.$emit("loadCatalog");
+                var index = inres.data.data.durChapterIndex || 0;
+                // console.log("book", book);
+                // console.log("getcatalog", index);
+                this.getContent(index);
+              }
+            });
           } else {
             if (init) {
               this.title = "";
@@ -1161,6 +1170,18 @@ export default {
           "@chapterList"
       );
     },
+    getCurrentBook(bookUrl) {
+      return networkFirstRequest(
+        () =>
+          Axios.get(this.api + `/getShelfBook`, {
+            params: {
+              url: bookUrl
+            }
+          }),
+        "getShelfBook" +
+          ((this.$store.state.userInfo || {}).username || "default")
+      );
+    },
     refreshCatalog() {
       return this.loadCatalog(true);
     },
@@ -1173,12 +1194,15 @@ export default {
       );
     },
     refreshContent() {
+      // console.log("refreshContent");
       this.getContent(this.$store.getters.readingBook.index, true);
     },
     getContent(index, refresh) {
       //展示进度条
+      // console.log("getContent");
       this.show = false;
       if (!this.loading || !this.loading.visible) {
+        // console.log("show loading");
         this.loading = this.$loading({
           target: this.$refs.content,
           lock: true,
@@ -1217,6 +1241,8 @@ export default {
       //let chapterUrl = this.$store.getters.readingBook.catalog[index].url;
       let chapterName = this.$store.getters.readingBook.catalog[index].title;
       let chapterIndex = this.$store.getters.readingBook.catalog[index].index;
+      // console.log("catalog", this.$store.getters.readingBook.catalog);
+      // console.log("chapterIndex", chapterIndex);
       this.title = chapterName;
       const now = new Date().getTime();
       this.getBookContent(chapterIndex, {}, refresh).then(
@@ -1521,6 +1547,7 @@ export default {
           this.computeShowChapterList(true);
           return;
         }
+        // console.log("toNextChapter", index);
         this.getContent(index);
       } else {
         onError && onError();
@@ -1546,6 +1573,7 @@ export default {
           this.computeShowChapterList(true);
           return;
         }
+        // console.log("toLastChapter", index);
         this.getContent(index);
       } else {
         this.$message.error("本章是第一章");
@@ -2585,6 +2613,7 @@ export default {
             }
           }
         }
+        // console.log("保存阅读进度", position);
         setCache(
           "bookChapterProgress@" +
             this.$store.getters.readingBook.name +

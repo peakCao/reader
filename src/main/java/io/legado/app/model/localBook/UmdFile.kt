@@ -121,6 +121,9 @@ class UmdFile(var book: Book) {
         return umdBook?.chapters?.getContentString(chapter.index)
     }
 
+    /**
+     * 获取章节列表
+     */
     private fun getChapterList(): ArrayList<BookChapter> {
         val chapterList = ArrayList<BookChapter>()
         umdBook?.chapters?.titles?.forEachIndexed { index, _ ->
